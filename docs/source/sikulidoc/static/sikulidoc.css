@@ -11,17 +11,24 @@
    white-space: -o-pre-wrap;    /* Opera 7 */
    word-wrap: break-word;       /* Internet Explorer 5.5+ */
    width: 99%;   /* remove horizontal scroll-bar when viewing in IE7 */
+   overflow: visible;
+   margin-left: 2em;
 }
-.sikuli-code img {
-   vertical-align: middle;
-   margin: 2px;
-   border: 1px solid #ccc;
-   padding: 2px;
-   -moz-border-radius: 5px;
-   -webkit-border-radius: 5px;
-   -moz-box-shadow: 1px 1px 1px gray;
-   -webkit-box-shadow: 1px 1px 2px gray;
+
+.lineno {
+   -moz-user-select: none;
+   -webkit-user-select: none;
+   user-select: none;
+   color: #ccc;
+   position: relative;
+   left: -2.4em;
+   width: 1.5em;
+   margin-right: -1.5em;
+   display:inline-block;
+   text-align:right;
+   font-size: small;
 }
+
 .kw {
    color: blue;
 }
@@ -65,4 +72,26 @@ div.sphinxsidebar {
 
 .sidebar li {
    margin-bottom: 5px;
+}
+
+.document img {
+   margin: 10px; 
+   border: 1px solid #999;
+   padding: 2px; 
+
+   -webkit-box-shadow: 1px 1px 1px #ccc;
+   -moz-box-shadow: 1px 1px 1px #ccc;
+   box-shadow: 1px 1px 1px #ccc;
+
+}
+
+.sikuli-code img {
+   vertical-align: middle;
+   margin: 2px;
+   border: 1px solid #ccc;
+   padding: 2px;
+   -moz-border-radius: 5px;
+   -webkit-border-radius: 5px;
+   -moz-box-shadow: 1px 1px 1px gray;
+   -webkit-box-shadow: 1px 1px 2px gray;
 }

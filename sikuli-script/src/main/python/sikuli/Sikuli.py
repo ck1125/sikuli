@@ -2,12 +2,14 @@
 # This module provides a Jython interface of Sikuli Script to automate GUI
 # interactions.
 ##
+from __future__ import with_statement
 import java.io.File
 import time
 from org.sikuli.script import SikuliScript
 from org.sikuli.script import Match
 from org.sikuli.script import Pattern
 from org.sikuli.script import FindFailed
+from org.sikuli.script import SikuliEvent
 import __builtin__
 import __main__
 import types
@@ -34,9 +36,32 @@ import SikuliImporter
 
 _si = SikuliScript()
 
+##
+# loads a Sikuli extension (.jar) from
+#  1. user's sikuli data path
+#  2. bundle path 
+#
 def load(jar):
-   if not jar in sys.path:
-      sys.path.append(jar)
+   import os
+   from org.sikuli.script import ExtensionManager
+   def _load(abspath):
+      if os.path.exists(abspath):
+         if not abspath in sys.path:
+            sys.path.append(abspath)
+            return True
+      return False
+
+   if _load(jar):
+      return True
+   path = ExtensionManager.getInstance().getUserExtPath()
+   jarInExtPath = path + java.io.File.separator + jar
+   if _load(jarInExtPath):
+      return True
+   path = getBundlePath()
+   jarInBundle = path + java.io.File.separator + jar
+   if _load(jarInBundle):
+      return True
+   return False
 
 def addImagePath(path):
    ImageLocator.addImagePath(path)

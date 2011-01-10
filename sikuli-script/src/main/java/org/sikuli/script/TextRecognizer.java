@@ -4,6 +4,10 @@ import java.awt.image.*;
 import java.io.*;
 import java.net.URL;
 import java.util.Enumeration;
+
+import org.sikuli.script.natives.Mat;
+import org.sikuli.script.natives.Vision;
+
 import com.wapmx.nativeutils.jniloader.NativeLoader;
 
 // Singleton
@@ -23,6 +27,8 @@ public class TextRecognizer {
    protected TextRecognizer(){
       init();
    }
+   
+   boolean _init_succeeded = false;
 
    public void init(){
       System.out.println("Text Recgonizer inited.");
@@ -33,11 +39,15 @@ public class TextRecognizer {
             path = path.substring(0,path.length()-9);
          Settings.OcrDataPath = path;
          Debug.log(3, "OCR data path: " + path);
+
+         Vision.initOCR(Settings.OcrDataPath);
+         _init_succeeded = true;
       }
       catch(IOException e){
          e.printStackTrace();
+      }catch(Exception e){
+         e.printStackTrace();         
       }
-      Vision.initOCR(Settings.OcrDataPath);
    }
 
    public static TextRecognizer getInstance(){
@@ -52,8 +62,12 @@ public class TextRecognizer {
    }
 
    public String recognize(BufferedImage img){
-      Mat mat = OpenCV.convertBufferedImageToMat(img);
-      return Vision.recognize(mat);
+      if (_init_succeeded){
+         Mat mat = OpenCV.convertBufferedImageToMat(img);
+         return Vision.recognize(mat);
+      }else{
+         return "";
+      }
    }
 }
 

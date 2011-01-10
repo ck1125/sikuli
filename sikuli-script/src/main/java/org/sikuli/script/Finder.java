@@ -5,6 +5,14 @@ import java.util.Iterator;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+
+import org.sikuli.script.natives.FindInput;
+import org.sikuli.script.natives.FindResult;
+import org.sikuli.script.natives.FindResults;
+import org.sikuli.script.natives.Mat;
+import org.sikuli.script.natives.TARGET_TYPE;
+import org.sikuli.script.natives.Vision;
+
 import com.wapmx.nativeutils.jniloader.NativeLoader;
 
 public class Finder implements Iterator<Match>{
@@ -13,17 +21,17 @@ public class Finder implements Iterator<Match>{
    private FindInput _findInput = new FindInput();
    private FindResults _results = null;
    private ImageLocator _imgLocator = null;
-   private int _cur_result_i = 0;
+   private int _cur_result_i;
 
    static {
       try{
          NativeLoader.loadLibrary("VisionProxy");
          System.out.println("Sikuli vision engine loaded.");
-         TextRecognizer tr = TextRecognizer.getInstance();
       }
       catch(IOException e){
          e.printStackTrace();
       }
+      Debug.ENABLE_PROFILING = true;
    }
 
    public Finder __enter__(){
@@ -67,7 +75,7 @@ public class Finder implements Iterator<Match>{
    protected <PSC> void setFindInput(PSC ptn) throws IOException{
       if( ptn instanceof Pattern ){
          _pattern = (Pattern)ptn;
-         _findInput.setTarget(findImageFile(_pattern.imgURL));
+         _findInput.setTarget(TARGET_TYPE.IMAGE,findImageFile(_pattern.imgURL));
          _findInput.setSimilarity(_pattern.similarity);
       }
       else if( ptn instanceof String){
@@ -80,11 +88,13 @@ public class Finder implements Iterator<Match>{
       try{
          //assume it's a file first
          String filename = findImageFile(target);
-         fin.setTarget(filename, false);
+         fin.setTarget(TARGET_TYPE.IMAGE, filename);
       }
       catch(IOException e){
+         // this will init text recognizer on demand
+         TextRecognizer tr = TextRecognizer.getInstance();
          //assume it's text 
-         fin.setTarget(target, true);
+         fin.setTarget(TARGET_TYPE.TEXT, target);
       }
    }
 
@@ -97,25 +107,39 @@ public class Finder implements Iterator<Match>{
    public <PSC> void find(PSC ptn) throws IOException{
       setFindInput(ptn);
       _results = Vision.find(_findInput);
+      _cur_result_i = 0;
    }
 
    public void find(String templateFilename, double minSimilarity) throws IOException{
       setTargetSmartly(_findInput, templateFilename);
       _findInput.setSimilarity(minSimilarity);
       _results = Vision.find(_findInput);
+      _cur_result_i = 0;
    }
 
    public <PSC> void findAll(PSC ptn) throws IOException {
+      Debug timing = new Debug();
+      timing.startTiming("Finder.findAll");
+
       setFindInput(ptn);
       _findInput.setFindAll(true);
       _results = Vision.find(_findInput);
+      _cur_result_i = 0;
+
+      timing.endTiming("Finder.findAll");
    }
 
    public void findAll(String templateFilename, double minSimilarity) throws IOException {
+      Debug timing = new Debug();
+      timing.startTiming("Finder.findAll");
+
       setTargetSmartly(_findInput, templateFilename);
       _findInput.setSimilarity(minSimilarity);
       _findInput.setFindAll(true);
       _results = Vision.find(_findInput);
+      _cur_result_i = 0;
+
+      timing.endTiming("Finder.findAll");
    }
 
    public boolean hasNext(){

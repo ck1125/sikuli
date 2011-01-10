@@ -76,7 +76,7 @@ public class Env {
    }
 
    static OSUtil _osUtil = null;
-   static OSUtil getOSUtil(){
+   public static OSUtil getOSUtil(){
       if(_osUtil == null){
          try{
             Class c = Class.forName(getOSUtilClass());
@@ -95,5 +95,24 @@ public class Env {
          return KeyEvent.VK_META;
       else
          return KeyEvent.VK_CONTROL;
+   }
+
+   static String getSikuliDataPath(){
+      String home, sikuliPath;
+      if(isWindows()){
+         home = System.getenv("APPDATA");  
+         sikuliPath = "Sikuli";
+      }
+      else if(isMac()){
+         home = System.getProperty("user.home") + 
+                "/Library/Application Support";
+         sikuliPath = "Sikuli";
+      }
+      else{
+         home = System.getProperty("user.home");
+         sikuliPath = ".sikuli";
+      }
+      File fHome = new File(home, sikuliPath);
+      return fHome.getAbsolutePath();
    }
 }

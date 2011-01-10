@@ -123,6 +123,7 @@ public class ScreenHighlighter extends TransparentWindow implements MouseListene
    BufferedImage bi = null;
    public void paint(Graphics g)
    {
+      super.paint(g);
       if( _native_transparent || _screen != null ){
          if ( bi==null || bi.getWidth(this) != getWidth() ||
               bi.getHeight(this) != getHeight() ) {

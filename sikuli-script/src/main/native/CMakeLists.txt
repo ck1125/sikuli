@@ -13,7 +13,6 @@ INCLUDE("${CMAKE_MODULE_PATH}/common.cmake")
 
 FIND_PROGRAM ( JAVA_JAVA_H javah PATHS ${JAVA_BIN_PATH} )
 SET(JNI_HEADERS
-   org_sikuli_script_EventManager.h
    org_sikuli_script_VDictProxy.h
    org_sikuli_script_Win32Util.h
    org_sikuli_script_MacUtil.h
@@ -29,6 +28,13 @@ INCLUDE_DIRECTORIES(${JNI_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${OPENCV_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE(${SWIG_USE_FILE})
+
+# profiling
+#LIST(APPEND CMAKE_CXX_FLAGS "-DENABLE_TIMING")
+# visual logger for debugging
+#LIST(APPEND CMAKE_CXX_FLAGS "-DENABLE_VISUAL_LOG")
+# OCR matching debug
+#LIST(APPEND CMAKE_CXX_FLAGS "-DENABLE_OCR_DEBUG")
 
 IF(NOT WIN32)
    FIND_PACKAGE(Tesseract REQUIRED)
@@ -58,7 +64,8 @@ ENDIF()
 
 LINK_DIRECTORIES(${OpenCV_LIBRARY_DIR})
 
-SET(CMAKE_SWIG_FLAGS -package ${PACKAGE})
+# tom SET(CMAKE_SWIG_FLAGS -package ${PACKAGE})
+SET(CMAKE_SWIG_FLAGS -package ${NATIVE_PACKAGE})
 SET(SWIG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 IF(LINUX)
@@ -117,10 +124,7 @@ SWIG_ADD_MODULE(VisionProxy java vision.i
    pyramid-template-matcher.cpp
    tessocr.cpp
    vision.cpp
-   EventManagerProxy.cc
-   event-manager.cc
    sikuli-debug.cpp
-   org_sikuli_script_EventManager.h
    ${TESSERACT_SOURCES}
 ) 
 SWIG_LINK_LIBRARIES(VisionProxy ${Tesseract_LIBRARY} ${OpenCV_LIBS})  
