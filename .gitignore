@@ -2,3 +2,10 @@ build/
 BUILD/
 *~
 *.bak
+sikuli-ide/target/jar/
+sikuli-ide/target/linux/Sikuli-IDE/*.jar
+sikuli-ide/target/linux/Sikuli-IDE/commons-cli-1.2.jar
+sikuli-ide/target/linux/Sikuli-IDE/libs/
+sikuli-ide/target/linux/Sikuli-IDE/swing-layout-1.0.1.jar
+sikuli-script/target/jar/
+
