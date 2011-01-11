@@ -7,3 +7,4 @@ INCLUDE(${CMAKE_MODULE_PATH}/common.cmake)
 add_subdirectory(sikuli-script)
 add_subdirectory(sikuli-ide)
 
+INCLUDE(CTest)
