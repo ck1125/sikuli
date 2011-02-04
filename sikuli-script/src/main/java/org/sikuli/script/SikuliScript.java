@@ -11,6 +11,7 @@ import java.util.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
+import org.python.util.jython;
 
 public class SikuliScript {
    public final static int DEFAULT_SERVER_PORT = 7458;
@@ -78,14 +79,22 @@ public class SikuliScript {
       */
    }
 
+   private static void startInteractiveMode(String[] args){
+      String [] jy_args = {"-i", "-c", "from sikuli import *"};
+      jython.main(jy_args);
+   }
+
    public static void main(String[] args){
       if(args.length == 0 ){
-         System.out.println("Usage: sikuli-script [-s] [file.sikuli]");
+         System.out.println("Usage: sikuli-script [-i] [-s] [file.sikuli]");
          return;
       }
       for (int i = 0; i < args.length; i++) {
          if(args[i].equals("-s")){
             startServerMode(DEFAULT_SERVER_PORT);
+         }
+         else if(args[i].equals("-i")){
+            startInteractiveMode(args);
          }
          else{
             try {
