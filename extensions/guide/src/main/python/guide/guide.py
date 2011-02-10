@@ -1,28 +1,36 @@
 from org.sikuli.guide import ScreenAnnotator
 from org.sikuli.script import UnionScreen
-from java.awt import Point
 
 s = UnionScreen()
 _sa = ScreenAnnotator(s);
 
-def addHighlight(target):
+def rectangle(target):
 	r = s.getRegionFromPSRM(target)
 	_sa.addHighlight(r)
 
-def addText(target, text):
+def text(target, text):
 	r = s.getRegionFromPSRM(target)
 	_sa.addHighlight(r)
-	_sa.addText(text, Point(r.x, r.y+r.h+5))
+	_sa.addText(r.getBottomLeft().below(5), text)
 
-def addTooltip(target, text):
+def clickable(target, name = ""):
+	r = s.getRegionFromPSRM(target)
+	_sa.addClickTarget(r, name)
+
+def dialog(text):
+	_sa.addDialog("Next", text)
+
+def circle(target):
+	r = s.getRegionFromPSRM(target)
+	_sa.addCircle(r)
+
+def tooltip(target, text):
 	r = s.getRegionFromPSRM(target)
 	_sa.addHighlight(r)
-	_sa.addToolTip(text, Point(r.x, r.y+r.h+5))
+	_sa.addToolTip(r.getBottomLeft().below(5), text)
 
-def show(secs):
-	_sa.show(secs)
-
-def nextStep(text):
-	_sa.showWaitForButtonClick("Next", text)
-
-
+def show(secs = None):
+	if secs:
+		_sa.showNow(secs)
+	else:
+		_sa.showNow()
