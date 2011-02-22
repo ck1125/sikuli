@@ -87,16 +87,89 @@
 #    jar file you can specify it with the VERSIONS argument. The argument after
 #    DOC will be used for the documentation string in the cache.
 #
+#
 #    install_jar(TARGET_NAME DESTINATION)
 #
 #    This command installs the TARGET_NAME files to the given DESTINATION. It
 #    should be called in the same scope as add_jar() or it will fail.
+#
 #
 #    install_jni_symlink(TARGET_NAME DESTINATION)
 #
 #    This command installs the TARGET_NAME JNI symlinks to the given
 #    DESTINATION. It should be called in the same scope as add_jar()
 #    or it will fail.
+#
+#
+#    create_javadoc
+#
+#       Create jave documentation based on files or packages. For more details
+#       please read the javadoc manpage.
+#
+#       There are two main signatures for create_javadoc. The first signature
+#       works with package names on a path with source files:
+#
+#       create_javadoc(
+#                      <VAR>
+#                      PACKAGES pkg1 [pkg2 ...]
+#                      [SOURCEPATH <sourcepath>]
+#                      [CLASSPATH <classpath>]
+#                      [INSTALLPATH <install path>]
+#                      [DOCTITLE "the documentation title"]
+#                      [WINDOWTITLE "the title of the document"]
+#                      [AUTHOR TRUE|FALSE]
+#                      [USE TRUE|FALSE]
+#                      [VERSION TRUE|FALSE]
+#                     )
+#
+#       Example:
+#
+#       create_javadoc(my_example_doc
+#           PACKAGES com.exmaple.foo com.example.bar
+#           SOURCEPATH ${CMAKE_CURRENT_SOURCE_PATH}
+#           CLASSPATH ${CMAKE_JAVA_INCLUDE_PATH}
+#           WINDOWTITLE "My example"
+#           DOCTITLE "<h1>My example</h1>"
+#           AUTHOR TRUE
+#           USE TRUE
+#           VERSION TRUE
+#       )
+#
+#       The second signature for create_javadoc works on a given list of files.
+#
+#       create_javadoc(
+#                      <VAR>
+#                      FILES file1 [file2 ...]
+#                      [CLASSPATH <classpath>]
+#                      [INSTALLPATH <install path>]
+#                      [DOCTITLE "the documentation title"]
+#                      [WINDOWTITLE "the title of the document"]
+#                      [AUTHOR TRUE|FALSE]
+#                      [USE TRUE|FALSE]
+#                      [VERSION TRUE|FALSE]
+#                     )
+#
+#       Example:
+#
+#       create_javadoc(my_example_doc
+#           FILES ${example_SRCS}
+#           CLASSPATH ${CMAKE_JAVA_INCLUDE_PATH}
+#           WINDOWTITLE "My example"
+#           DOCTITLE "<h1>My example</h1>"
+#           AUTHOR TRUE
+#           USE TRUE
+#           VERSION TRUE
+#       )
+#
+#       Both signatures share most of the options. These options are the same
+#       as what you can find in the javadoc manpage. Please look at the manpage
+#       for CLASSPATH, DOCTITLE, WINDOWTITLE, AUTHOR, USE and VERSION.
+#
+#       The documentation will be by default installed to
+#
+#           ${CMAKE_INSTALL_PREFIX}/share/javadoc/<VAR>
+#
+#       if you don't set the INSTALLPATH.
 #
 #=============================================================================
 # Copyright 2010      Andreas schneider <asn@redhat.com>
