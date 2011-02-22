@@ -44,14 +44,32 @@ public class Region {
    protected Iterator<Match> _lastMatches;
 
 
+  /**
+   * Create a region with the provided coordinate / size
+   *
+   * @param x_ X position
+   * @param y_ Y position  
+   * @param w_ width
+   * @param h_ heigth
+   */
    public Region(int x_, int y_, int w_, int h_) {
       init(x_,y_,w_,h_);
    }
 
+  /**
+   * Create a region from a Rectangle
+   *
+   * @param r the Rectangle
+   */
    public Region(Rectangle r) {
       init(r.x, r.y, r.width, r.height);
    }
 
+  /**
+   * Create a region from an other region
+   *
+   * @param r the region
+   */
    public Region(Region r) {
       init(r.x, r.y, r.w, r.h);
    }
@@ -302,6 +320,10 @@ public class Region {
     * Match find( Pattern/String/PatternClass ) 
     * finds the given pattern on the screen and returns the best match.
     * If AutoWaitTimeout is set, this is equivalent to wait().
+    *
+    * @param target A search criteria 
+    * @return If found, the element. null otherwise
+    * @throws FindFailed if the Find operation failed
     */
    public <PSC> Match find(final PSC target) throws FindFailed{
       if(_autoWaitTimeout > 0){
@@ -356,6 +378,10 @@ public class Region {
     * Iterator<Match> findAll( Pattern/String/PatternClass ) 
     * finds the given pattern on the screen and returns the best match.
     * If AutoWaitTimeout is set, this is equivalent to wait().
+    *
+    * @param target A search criteria 
+    * @return All elements matching
+    * @throws FindFailed if the Find operation failed
     */
    public <PSC> Iterator<Match> findAll(PSC target) 
                                              throws  FindFailed{
@@ -396,12 +422,17 @@ public class Region {
    /**
     *  Match wait(Pattern/String/PatternClass target, timeout-sec)
     *  waits until target appears or timeout (in second) is passed
+    * 
+    * @param target A search criteria 
+    * @param timeout Timeout in seconds
+    * @return All elements matching
+    * @throws FindFailed if the Find operation failed
     */
    public <PSC> Match wait(PSC target, double timeout) throws FindFailed{
       
       while (true){         
          try {
-            Debug.log("waiting for " + target + " to appear");
+            Debug.log(2, "waiting for " + target + " to appear");
             RepeatableFind rf = new RepeatableFind(target);
             rf.repeat(timeout);
             _lastMatch = rf.getMatch();
@@ -411,11 +442,11 @@ public class Region {
          }  
          
          if (_lastMatch != null){
-            Debug.log("" + target + " has appeared.");
+            Debug.log(2, "" + target + " has appeared.");
             break;
          }
 
-         Debug.log("" + target + " has not appeared.");
+         Debug.log(2, "" + target + " has not appeared.");
          
          if (!handleFindFailed(target))
             return null;
@@ -424,14 +455,22 @@ public class Region {
       return _lastMatch;
    }
 
+   /**
+    *  Check if target exists (wait 3 seconds max)
+    * 
+    * @param target A search criteria 
+    * @return The element matching
+    */
    public <PSC> Match exists(PSC target) {
       return exists(target, _autoWaitTimeout);
    }
 
    /**
-    *  Match exists(Pattern/String/PatternClass target, timeout-sec)
-    *  waits until target appears or timeout (in second) is passed. 
-    *  No FindFailed exception will be thrown even if the target is not found.
+    *  Check if target exists with a specified timeout
+    * 
+    * @param target A search criteria 
+    * @param timeout Timeout in second
+    * @return The element matching
     */
    public <PSC> Match exists(PSC target, double timeout) {
       try{
@@ -461,15 +500,15 @@ public class Region {
     */
    public <PSC> boolean waitVanish(PSC target, double timeout) {
       try {
-         Debug.log("waiting for " + target + " to vanish");
+         Debug.log(2, "waiting for " + target + " to vanish");
          RepeatableVanish r = new RepeatableVanish(target);
          if (r.repeat(timeout)){
             // target has vanished before timeout
-            Debug.log("" + target + " has vanished");
+            Debug.log(2, "" + target + " has vanished");
             return true;
          }else{            
             // target has not vanished before timeout
-            Debug.log("" + target + " has not vanished before timeout");
+            Debug.log(2, "" + target + " has not vanished before timeout");
             return false;
          }
 
@@ -483,6 +522,14 @@ public class Region {
    }
 
 
+  /**
+   * Click on the item provided by "target" 
+   *
+   * @param target  Where to click
+   * @param modifiers Can be 0 (no modifier), K_SHIFT, K_CTRL, K_ALT or K_META
+   * @return 1 if success, 0 otherwise
+   * @throws FindFailed if the Find operation failed
+   */
    public <PSRML> int click(PSRML target, int modifiers) 
                                                 throws  FindFailed{
       Location loc = getLocationFromPSRML(target);
@@ -492,6 +539,15 @@ public class Region {
       return ret;
    }
 
+
+  /**
+   * Double click on the item provided by "target" 
+   *
+   * @param target  Where to double click
+   * @param modifiers Can be 0 (no modifier), K_SHIFT, K_CTRL, K_ALT or K_META
+   * @return 1 if success, 0 otherwise
+   * @throws FindFailed if the Find operation failed
+   */
    public <PSRML> int doubleClick(PSRML target, int modifiers) 
                                                 throws  FindFailed{
       Location loc = getLocationFromPSRML(target);
@@ -501,6 +557,15 @@ public class Region {
       return ret;
    }
 
+
+  /**
+   * Right click on the item provided by "target" 
+   *
+   * @param target  Where to right click
+   * @param modifiers Can be 0 (no modifier), K_SHIFT, K_CTRL, K_ALT or K_META
+   * @return 1 if success, 0 otherwise
+   * @throws FindFailed if the Find operation failed
+   */
    public <PSRML> int rightClick(PSRML target, int modifiers) 
                                                 throws  FindFailed{
       Location loc = getLocationFromPSRML(target);
@@ -510,6 +575,13 @@ public class Region {
       return ret;
    }
 
+  /**
+   * Move the wheel at the current position
+   *
+   * @param direction the direction applied
+   * @param steps the number of step
+   * @return 1 in any case
+   */
    public int wheel(int direction, int steps) throws FindFailed{
       for(int i=0;i<steps;i++){
          _robot.mouseWheel(direction);
@@ -518,6 +590,16 @@ public class Region {
       return 1;
    }
 
+
+  /**
+   * Move the wheel at the specified position
+   *
+   * @param target The specified position
+   * @param direction the direction applied
+   * @param steps the number of step
+   * @return 1 if success, 0 otherwise
+   * @throws FindFailed if the Find operation failed
+   */
    public <PSRML> int wheel(PSRML target, int direction, int steps) throws FindFailed{
       if( target == null || hover(target) != 0){
          return wheel(direction, steps);
@@ -536,11 +618,24 @@ public class Region {
       return 0;
    }
 
+
+  /**
+   * Drag and drop from a position to the other
+   *
+   * @param t1 The specified source position
+   * @param t2 The specified destination position
+   * @param modifiers Can be 0 (no modifier), K_SHIFT, K_CTRL, K_ALT or K_META
+   * @return 1 if success, 0 otherwise
+   * @throws FindFailed if the Find operation failed
+   */
    public <PSRML> int dragDrop(PSRML t1, PSRML t2, int modifiers)
                                              throws  FindFailed {
       int ret = 0;
       Location loc1 = getLocationFromPSRML(t1);
       Location loc2 = getLocationFromPSRML(t2);
+      Debug.history( 
+        (modifiers!=0?KeyEvent.getKeyModifiersText(modifiers)+"+":"")+
+        "DRAG "  + loc1 + " to " + loc2);
       if(loc1 != null && loc2 != null){
          pressModifiers(modifiers);
          if(drag(loc1)!=0){
@@ -582,9 +677,9 @@ public class Region {
                                                 throws  FindFailed{
       click(target, 0);
       if(text != null){
-         Debug.log("type \"" + text + "\", mod: " + 
-                   KeyEvent.getKeyModifiersText(modifiers) + 
-                   "(" + modifiers +")");
+         Debug.history(
+           (modifiers!=0?KeyEvent.getKeyModifiersText(modifiers)+"+":"")+
+               "TYPE \"" + text + "\"");
          for(int i=0; i < text.length(); i++){
             pressModifiers(modifiers);
             type_ch(text.charAt(i), PRESS_RELEASE); 
@@ -834,6 +929,12 @@ public class Region {
       return _lastMatches;
    }
    
+   /**
+    * Figure out where is located target
+    *
+    * @param target The specified position
+    * @return The Region if found. null otherwise.
+    */
    public <PSRM> Region getRegionFromPSRM(PSRM target) 
                                              throws  FindFailed {
       if(target instanceof Pattern || target instanceof String){
@@ -847,6 +948,13 @@ public class Region {
       return null;
    }
 
+    
+   /**
+    * Figure out where is located target
+    *
+    * @param target The specified position
+    * @return The Location if found. null otherwise.
+    */
    public <PSRML> Location getLocationFromPSRML(PSRML target) 
                                              throws  FindFailed {
       if(target instanceof Pattern || target instanceof String){
@@ -863,14 +971,18 @@ public class Region {
 
    private String getClickMsg(Location loc, int buttons, int modifiers, 
                               boolean dblClick){
-      String msg = "click";
-      if(dblClick)
-         msg = "double click";
+      String msg = "";
+      if(modifiers != 0)
+         msg += KeyEvent.getKeyModifiersText(modifiers) + "+";
+      if(buttons==InputEvent.BUTTON1_MASK && !dblClick)
+         msg += "CLICK";
+      if(buttons==InputEvent.BUTTON1_MASK && dblClick)
+         msg += "DOUBLE CLICK";
       if(buttons==InputEvent.BUTTON3_MASK)
-         msg = "right click";
+         msg += "RIGHT CLICK";
       else if(buttons==InputEvent.BUTTON2_MASK)
-         msg = "mid click";
-      msg += " on " + loc + ", MOD: " + modifiers;
+         msg += "MID CLICK";
+      msg += " on " + loc;
       return msg;
    }
 
@@ -878,7 +990,7 @@ public class Region {
                       boolean dblClick) {
       if(loc == null)
          return 0;
-      Debug.info( getClickMsg(loc, buttons, modifiers, dblClick) );
+      Debug.history( getClickMsg(loc, buttons, modifiers, dblClick) );
       pressModifiers(modifiers);
       smoothMove(loc);
       _scr.showClick(loc);
