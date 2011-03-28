@@ -1,27 +1,20 @@
 package org.sikuli.guide;
 import java.awt.AWTException;
-import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
 import java.awt.Robot;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
-import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
-import org.sikuli.script.Debug;
 import org.sikuli.script.Env;
-import org.sikuli.script.Location;
 import org.sikuli.script.OS;
 import org.sikuli.script.Region;
 import org.sikuli.script.Screen;
@@ -30,7 +23,7 @@ import org.sikuli.script.TransparentWindow;
 public class SikuliGuide extends TransparentWindow {
 
 
-   static final float DEFAULT_SHOW_DURATION = 10.0f;
+   static float defaultTimeout = 10.0f;
 
 
    static public final int FIRST = 0;
@@ -40,24 +33,29 @@ public class SikuliGuide extends TransparentWindow {
 
 
    Robot robot;
+   
+   public void setDefaultTimeout(float timeout_in_seconds){
+      defaultTimeout = timeout_in_seconds;
+   }
 
    // all the actions will be restricted to this region
    Region _region;
-   
+
    public Region getRegion(){
       return _region;
    }
 
    // swing components will be drawn on this panel
    JPanel content = new JPanel(null);
-
-   ArrayList<Annotation> _annotations = new ArrayList<Annotation>();
-   ArrayList<AnnotationHighlight> _highlights = new ArrayList<AnnotationHighlight>(); 
-
-   ArrayList<ClickTarget> _clickTargets = new ArrayList<ClickTarget>();
-
+   //Container content;
    
-   SingletonInteractionTarget interactionTarget;
+   
+   Transition transition;
+   //Transition defaultTransition;   
+   
+   ArrayList<Tracker> trackers = new ArrayList<Tracker>();
+   ClickableWindow clickableWindow;
+   
    
    public SikuliGuide(){
       init(new Screen());
@@ -68,14 +66,12 @@ public class SikuliGuide extends TransparentWindow {
    }
 
    void init(Region region){
-
+      
       try {
          robot = new Robot();
       } catch (AWTException e1) {
          e1.printStackTrace();
       }
-
-
 
       _region = region;      
       Rectangle rect = _region.getRect();
@@ -83,12 +79,13 @@ public class SikuliGuide extends TransparentWindow {
       add(content);
 
       setBounds(rect);
-      
+
+      setBackground(null);
 
       // It turns out these are useful after all
       // so that it works on Windows
       ((JPanel)getContentPane()).setBackground(null);      
-      content.setBackground(null);
+     // content.setBackground(null);
 
       Env.getOSUtil().setWindowOpaque(this, false);
       //setOpacity(1.0f);
@@ -99,67 +96,56 @@ public class SikuliGuide extends TransparentWindow {
       setVisible(false);
       setAlwaysOnTop(true);
       setFocusableWindowState(false);
+
+        
+      clickableWindow = new ClickableWindow(this);
    }
 
-
+   
+   
    public void paint(Graphics g){
-
-     
       Graphics2D g2d = (Graphics2D)g;
-
       super.paint(g);
-
-
-      if (_highlights.size() > 0){
-      
-         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.2f));
-         g2d.setColor(Color.black);
-         g2d.fillRect(0,0,_region.w,_region.h);
-
-         // draw highlight before other annotation elements 
-         for (AnnotationHighlight h : _highlights){
-            h.paintAnnotation(g2d);
-         }
-      }
-
-      for (Annotation an : _annotations){
-         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
-               RenderingHints.VALUE_ANTIALIAS_ON);			
-         an.paintAnnotation(g2d);
-         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.0f));
-      }
    }
 
    public void clear(){
-      for (ClickTarget target : _clickTargets){
-         target.dispose();
-      }
       
-      _highlights.clear();
-      _annotations.clear();
-      content.removeAll();
-      dialog = null;
-      interactionTarget = null;
-      spotlight = null;
-      _clickTargets.clear();
+      if (clickableWindow != null)
+         clickableWindow.clear();
+      
+      stopAnimation();
+      
+      setBackground(null);
+      content.setBackground(null);
+
+      for (Tracker track : trackers){
+         track.stopTracking();
+      }
+      trackers.clear();
+      
+      
+      //getContentPane().removeAll();
+      transition = null;
+      beam = null;
+
    }
-   
+
    SearchDialog search = null;
    public void addSearchDialog(){
       search = new SearchDialog(this, "Enter the search string:");
+      //search = new GUISearchDialog(this);
       search.setLocationRelativeTo(null);
       search.setAlwaysOnTop(true);
+   }
+
+   public void setSearchDialog(SearchDialog search){
+      this.search = search;
    }
 
    public void addSearchEntry(String key, Region region){
       if (search == null)
          addSearchDialog();
       search.addEntry(key, region);
-   }
-   
-   public void addAnnotation(Annotation annotation){
-      _annotations.add(annotation);
    }
 
    Point convertToRegionLocation(Point point_in_global_coordinate){
@@ -168,196 +154,255 @@ public class SikuliGuide extends TransparentWindow {
       return ret;
    }
 
-   public void addArrow(Point from, Point to){
-      Point from1 = convertToRegionLocation(from);
-      Point to1 = convertToRegionLocation(to);
+//   public void addArrow(Point from, Point to){
+//      Point from1 = convertToRegionLocation(from);
+//      Point to1 = convertToRegionLocation(to);
+//
+//      //      addAnnotation(new AnnotationArrow(from1, to1, Color.black));
+//   }
 
-      addAnnotation(new AnnotationArrow(from1, to1, Color.black));
-   }
+   public void updateSpotlights(ArrayList<Region> regions){
+      removeSpotlights();
 
-   // Draw an oval containing the given region
-   public void addCircle(Region region){
-      Location o = region.getCenter();
-      Location p = region.getTopLeft();
-      o.translate(-_region.x, -_region.y);
-      p.translate(-_region.x, -_region.y);
+      if (regions.isEmpty()){
 
-      p.translate((int)((p.x-o.x)*0.44), (int) ((p.y-o.y)*0.44));
-      addAnnotation(new AnnotationOval(o.x,o.y,p.x,p.y));
-   }
+         setBackground(null);
+         content.setBackground(null);
 
+      }else{
 
-   public void updateHighlights(ArrayList<Region> regions){
-      _highlights.clear();
-      for (Region r : regions){
-         addHighlight(r);
-      }
-      repaint();
-   }
-   
-   public void removeHighlights(){
-      _highlights.clear();
-   }
-   
-   public void addHighlight(Region region){	
-      Rectangle rect = new Rectangle(region.getRect());
-      rect.translate(-_region.x, -_region.y);
-      _highlights.add(new AnnotationHighlight(rect));
-   }
-
-   public void addRectangle(Region region){  
-      Rectangle rect = new Rectangle(region.getRect());
-      rect.translate(-_region.x, -_region.y);
-      addAnnotation(new AnnotationRectangle(rect));
-   }
-
-   ClickTarget _clickTarget = null;
-   public void addClickTarget(Region region, String name){
-      _clickTargets.add(new ClickTarget(this, region.getRect(), name));
-   }
-
-   public void addToolTip(Location location, String message){
-      Point screen_loc = convertToRegionLocation(location);
-      addAnnotation(new AnnotationToolTip(message, screen_loc));
-   }
-
-   public enum VerticalAlignment{
-      TOP, MIDDLE, BOTTOM
-   }
-
-   public enum HorizontalAlignment{
-      LEFT, CENTER, RIGHT
-   }
-
-   public void addText(Location location, String message){
-      // The location is in the global screen coordinate
-
-      addText(location, message, HorizontalAlignment.LEFT, VerticalAlignment.TOP);      
-   }
-   
-   public void addComponent(Component comp){
-      if (comp instanceof Flag){
-         ((Flag) comp).guide = this;
-      }
-      content.add(comp);
-   }
-   
-   public void addBookmark(Location location, String message){
-      Flag b = new Flag(location, message);
-   //   b.setLocation(location);
-      //b.setBounds(_region.getRect());
-      content.add(b);
-   }
-   
-   Spotlight spotlight = null;
-   public void addSpotlight(Region r){
-      spotlight = new Spotlight(this, r);
-      spotlight.setAlwaysOnTop(true);
-      interactionTarget = spotlight;
-   }
-   
-   public void addText(Location location, String message, HorizontalAlignment horizontal_alignment, 
-         VerticalAlignment vertical_alignment){
-      StaticText textbox = new StaticText(this, message);
-      textbox.align(location, horizontal_alignment, vertical_alignment);
-      textbox.moveInside(_region);
-      content.add(textbox);
-      repaint();
-   }
-   
-   public enum Side {
-      TOP,
-      LEFT,
-      RIGHT,
-      BOTTOM
-   }
-   
-   public void addText(Region r, String message, Side side){
-      HorizontalAlignment h = null;
-      VerticalAlignment v = null;      
-      Location p = null;      
-      
-      if (side == Side.TOP){
-         p = new Location(r.x+r.w/2, r.y);
-         h = HorizontalAlignment.CENTER;
-         v = VerticalAlignment.BOTTOM;
-      } else if (side == Side.BOTTOM){
-         p = new Location(r.x+r.w/2, r.y+r.h);
-         h = HorizontalAlignment.CENTER;
-         v = VerticalAlignment.TOP; 
-      } else if (side == Side.LEFT){
-         p = new Location(r.x, r.y+r.h/2);
-         h = HorizontalAlignment.RIGHT;
-         v = VerticalAlignment.MIDDLE; 
-      } else if (side == Side.RIGHT){
-         p = new Location(r.x+r.w, r.y+r.h/2);
-         h = HorizontalAlignment.LEFT;
-         v = VerticalAlignment.MIDDLE; 
-      }      
-      addText(p, message, h, v);
-   }
-
-   NavigationDialog dialog = null;
-   public void addDialog(String message, int style){
-      dialog = new NavigationDialog(this, message, style);  
-      dialog.setAlwaysOnTop(true);
-      dialog.pack();
-      interactionTarget = dialog;
-   }
-
-   public void addDialog(String message){
-      addDialog(message, SIMPLE);
-      dialog.setLocationRelativeTo(this);
-      interactionTarget = dialog;
-   }
-   
-   public void addDialog(NavigationDialog dialog_){
-      dialog = dialog_;
-      //dialog.setAlwaysOnTop(true);
-      dialog.pack();
-      interactionTarget = dialog;
-   }
-
-   ClickTarget _lastClickedTarget = null;
-
-   public ClickTarget getLastClickedTarget() {
-      return _lastClickedTarget;
-   }
-
-   public void setLastClickedTarget(ClickTarget lastClickedTarget) {
-      this._lastClickedTarget = lastClickedTarget;
-   }
-
-
-   public void startAnimation(){
-      for (Component co : content.getComponents()){
-         if (co instanceof Flag){
-            ((Flag) co).start();
+         // if there are spotlights added, darken the background
+         setBackground(new Color(0f,0f,0f,0.2f));
+         content.setBackground(new Color(0f,0f,0f,0.2f));
+         for (Region r : regions){
+            SikuliGuideSpotlight spotlight = new SikuliGuideSpotlight(r);
+            spotlight.setShape(SikuliGuideSpotlight.CIRCLE);
+            //addSpotlight(r,SikuliGuideSpotlight.CIRCLE);
          }
+      }
+
+      repaint();
+   }
+
+   public void removeSpotlights(){
+      for (Component co : content.getComponents()){
+         if (co instanceof SikuliGuideSpotlight){
+            content.remove(co);
+         }
+      }
+   }
+
+//   public SikuliGuideSpotlight addSpotlight(Region region){   
+//      return addSpotlight(region, SikuliGuideSpotlight.RECTANGLE);
+//   }
+
+//   public SikuliGuideSpotlight addSpotlight(Region region, int style){	
+//      //      Rectangle rect = new Rectangle(region.getRect());
+//      //      rect.translate(-_region.x, -_region.y);
+//      //      
+//
+//      SikuliGuideSpotlight spotlight = new SikuliGuideSpotlight(this,region);
+//      spotlight.setShape(style);
+//      addComponent(spotlight);
+//      //_spotlights.add(spotlight);
+//
+//      // if there's any spotlight added, darken the 
+//      // background
+//      //setBackground(new Color(0f,0f,0f,0.2f));      
+//      //content.setBackground(new Color(0f,0f,0f,0.2f));      
+//
+//      return spotlight;
+//   }
+
+   //   public void addRectangle(Region region){  
+   //      Rectangle rect = new Rectangle(region.getRect());
+   //      rect.translate(-_region.x, -_region.y);
+   //      addAnnotation(new AnnotationRectangle(rect));
+   //   }
+
+   public void addClickable(Region region, String name){
+      clickableWindow.addClickableRegion(region,name);
+      setTransition(clickableWindow);      
+   }
+
+   //   public void addToolTip(Location location, String message){
+   //      Point screen_loc = convertToRegionLocation(location);
+   //      addAnnotation(new AnnotationToolTip(message, screen_loc));
+   //   }
+//
+//   public enum VerticalAlignment{
+//      TOP, MIDDLE, BOTTOM
+//   }
+//
+//   public enum HorizontalAlignment{
+//      LEFT, CENTER, RIGHT
+//   }
+
+//   public void addText(Location location, String message){
+//      // The location is in the global screen coordinate
+//
+//      addText(location, message, HorizontalAlignment.LEFT, VerticalAlignment.TOP);      
+//   }
+
+//   public void addFlag(Location location, String message){
+//      Flag flag = new Flag(location, message);
+//      addComponent(flag);
+//   }
+
+   public void addComponent(SikuliGuideComponent comp){
+      content.add(comp);
+      if (comp instanceof SikuliGuideSpotlight){
+         // if there's any spotlight added, darken the 
+         // background
+         setBackground(new Color(0f,0f,0f,0.2f));
+         content.setBackground(new Color(0f,0f,0f,0.2f));
+      }
+      
+      if (comp instanceof SikuliGuideText ||
+            comp instanceof SikuliGuideRectangle ||
+            comp instanceof SikuliGuideCircle ||
+            comp instanceof SikuliGuideArrow ||
+            comp instanceof SikuliGuideImage ||
+            comp instanceof SikuliGuideFlag ||
+            comp instanceof SikuliGuideCallout ||
+            comp instanceof SikuliGuideBracket) {
+         SikuliGuideComponent s = new SikuliGuideShadow(comp);
+         content.add(s);
+      }
+   }
+
+   public void removeComponent(Component comp){
+      content.remove(comp);
+   }
+
+//   public void addBookmark(Location location, String message){
+//      Flag b = new Flag(location, message);
+//      //   b.setLocation(location);
+//      //b.setBounds(_region.getRect());
+//      content.add(b);
+//   }
+
+   Beam beam = null;
+   public void addBeam(Region r){
+      beam = new Beam(this, r);
+      beam.setAlwaysOnTop(true);
+      transition = beam;
+   }
+
+//   public void addText(Location location, String message, HorizontalAlignment horizontal_alignment, 
+//         VerticalAlignment vertical_alignment){
+//      StaticText textbox = new StaticText(this, message);
+//      textbox.align(location, horizontal_alignment, vertical_alignment);
+//      textbox.moveInside(_region);
+//      content.add(textbox);
+//      repaint();
+//   }
+
+//   public enum Side {
+//      TOP,
+//      LEFT,
+//      RIGHT,
+//      BOTTOM
+//   }
+
+//   public void addText(Region r, String message, Side side){
+//      HorizontalAlignment h = null;
+//      VerticalAlignment v = null;      
+//      Location p = null;      
+//
+//      if (side == Side.TOP){
+//         p = new Location(r.x+r.w/2, r.y);
+//         h = HorizontalAlignment.CENTER;
+//         v = VerticalAlignment.BOTTOM;
+//      } else if (side == Side.BOTTOM){
+//         p = new Location(r.x+r.w/2, r.y+r.h);
+//         h = HorizontalAlignment.CENTER;
+//         v = VerticalAlignment.TOP; 
+//      } else if (side == Side.LEFT){
+//         p = new Location(r.x, r.y+r.h/2);
+//         h = HorizontalAlignment.RIGHT;
+//         v = VerticalAlignment.MIDDLE; 
+//      } else if (side == Side.RIGHT){
+//         p = new Location(r.x+r.w, r.y+r.h/2);
+//         h = HorizontalAlignment.LEFT;
+//         v = VerticalAlignment.MIDDLE; 
+//      }      
+//      addText(p, message, h, v);
+//   }
+
+//   TransitionDialog dialog = null;
+//   public void setDialog(String message, int style){
+//      TransitionDialog dialog = new TransitionDialog();
+//      dialog.setText(message);
+////      dialog.setStyle(style);
+//      transition = dialog;
+//   }
+//
+//   public TransitionDialog getDialog(){
+//      return dialog;
+//   }
+
+   public void setDialog(String message){
+      TransitionDialog dialog = new TransitionDialog();
+      dialog.setText(message);
+      transition = dialog;
+   }
+
+   public void setDialog(TransitionDialog dialog_){
+      //dialog = dialog_;
+      transition = dialog_;
+   }
+
+   
+   public void stopAnimation(){
+      for (Component co : content.getComponents()){
+
          if (co instanceof Magnifier){
             ((Magnifier) co).start();
          }
+
+         if (co instanceof SikuliGuideComponent){
+            ((SikuliGuideComponent) co).stopAnimation();
+         }
       }
    }
    
-   public String showNowWithDialog(int style){
+   public void startAnimation(){
+      for (Component co : content.getComponents()){
 
-      // create the default dialog, unless the user
-      // has already added one
-      if (dialog == null){
-         addDialog("",style);
-         dialog.setLocationRelativeTo(this);
-      } else{
-         dialog.setStyle(style);
+         if (co instanceof Magnifier){
+            ((Magnifier) co).start();
+         }
+
+         if (co instanceof SikuliGuideComponent){
+            ((SikuliGuideComponent) co).startAnimation();
+         }
       }
-      return showNow();        
    }
+   
+
+//   public String showNowWithDialog(int style){
+//      //dialog.setStyle(style);
+//      //setTransition(dialog);
+//      return showNow();        
+//   }
 
    public String showNow(){
-      return showNow(DEFAULT_SHOW_DURATION);
+      return showNow(defaultTimeout);
    }
 
    public String showNow(float secs){
+      
+      if (content.getComponentCount()  == 0 
+            && transition == null 
+            && search == null){
+         // if no component at all, return immediately because
+         // there's nothing to show
+         return "Next";         
+      }
+      
+      startAnimation();      
+      startTracking();
 
       // do these to allow static elements to be drawn
       setVisible(true);
@@ -366,9 +411,12 @@ public class SikuliGuide extends TransparentWindow {
 
       // deal with interactive elements
       if (search != null){
-         
+
          search.setVisible(true);
          search.requestFocus();
+
+
+
          synchronized(this){
             try {
                wait();
@@ -385,59 +433,72 @@ public class SikuliGuide extends TransparentWindow {
          focusBelow();
          return key;
       }
-      else if (interactionTarget != null){
+      //else if (transition != null){
          
-
-
-         for (ClickTarget target : _clickTargets){
-            target.setVisible(true);        
-            target.setIgnoreMouse(true);
+         if (transition == null){
+            transition = new TimeoutTransition((int)secs*1000);
          }
          
-         String cmd = interactionTarget.waitUserAction();
-
-         closeNow();
+         String cmd = transition.waitForTransition();
          focusBelow();
+         
+         if (transition instanceof ClickableWindow){
+            // relay the click at the same position
+            //Debug.info("clicking");
+            robot.mousePress(InputEvent.BUTTON1_MASK);            
+            robot.mouseRelease(InputEvent.BUTTON1_MASK);
+         }
+         
+         closeNow();
+        
          return cmd;
-      }
-      else if (!_clickTargets.isEmpty()){
+//      }
+//      else if (!_clickTargets.isEmpty()){
+//
+//         for (ClickTarget target : _clickTargets){
+//            target.setVisible(true);
+//         }
+//
+//         synchronized(this){
+//            try {
+//               wait();
+//            } catch (InterruptedException e) {
+//               e.printStackTrace();
+//            }
+//         }
+//
+//         Debug.log("Last clicked:" + _lastClickedTarget.getName());
+//
+//         closeNow();
+//         focusBelow();
+//
+//         robot.mousePress(InputEvent.BUTTON1_MASK);            
+//         robot.mouseRelease(InputEvent.BUTTON1_MASK);
+//
+//         return SikuliGuideDialog.NEXT;
 
-         for (ClickTarget target : _clickTargets){
-            target.setVisible(true);
-         }
-
-         synchronized(this){
-            try {
-               wait();
-            } catch (InterruptedException e) {
-               e.printStackTrace();
-            }
-         }
-
-         Debug.log("Last clicked:" + _lastClickedTarget.getName());
-
-         closeNow();
-         focusBelow();
-
-         robot.mousePress(InputEvent.BUTTON1_MASK);            
-         robot.mouseRelease(InputEvent.BUTTON1_MASK);
-
-         return SikuliGuideDialog.NEXT;
-
-      }else{
-
-         // if there's no interactive element
-         // just close it after the timeout
-         closeAfter(secs);
-
-         return SikuliGuideDialog.NEXT;
-      }
+//      }else {
+//
+//
+//         // if there's no transition element
+//         // just close it after the timeout
+//         closeAfter(secs);
+//
+//         return BaseDialog.NEXT;
+//      } 
    }
 
    private void closeNow(){
       clear();
       setVisible(false);
+      
       dispose();
+//      if (dialog != null)
+//         dialog.dispose();
+      
+      if (clickableWindow != null){
+         clickableWindow.dispose();
+      }
    }
 
    private void closeAfter(float secs){
@@ -485,37 +546,73 @@ public class SikuliGuide extends TransparentWindow {
       }     
       super.toFront();
    }
+//   public void addImage(Location location, String filename) {
+//      addImage(location,filename,1.0f);
+//   }
 
-   public void addImage(Location location, String filename) {
-      BufferedImage bimage = null;
-      try {
-         File sourceimage = new File(filename);
-         bimage = ImageIO.read(sourceimage);
-         Image img = new Image(bimage);
-         img.setLocation(location);
-         content.add(img);
-      } catch (IOException ioe) {
-         ioe.printStackTrace();
-      }
-   }
 
-   public void addMagnifier(Region region) {
-       Magnifier mag = new Magnifier(this,region);
-       content.add(mag);
-
+//   public void addImage(Location location, String filename, float scale) {
 //      BufferedImage bimage = null;
 //      try {
 //         File sourceimage = new File(filename);
 //         bimage = ImageIO.read(sourceimage);
-//         Magnifier mag = new Magnifier(this,bimage);
-//         mag.setLocation(location);
-//         content.add(mag);
+//         SikuliGuideImage img = new SikuliGuideImage(bimage);
+//         img.setLocation(location);
+//         img.setScale(scale);
+//         content.add(img);
 //      } catch (IOException ioe) {
 //         ioe.printStackTrace();
 //      }
+//   }
+
+   public void addMagnifier(Region region) {
+      Magnifier mag = new Magnifier(this,region);
+      content.add(mag);
    }
 
+   public void setTransition(Transition t) {
+      this.transition = t;      
+   }
 
+   public void removeComponents() {
+      content.removeAll();
+   }
+   
+   
+   public void startTracking(){
+      for (Tracker tracker : trackers){
+         tracker.start();
+      }
+   }
+
+   public void addTracker(String image_filename, Region r, SikuliGuideComponent c){     
+      Tracker tracker = null;
+      
+      // find a tracker already assigned to the filename
+      for (Tracker t : trackers){
+         if (t.isAlreadyTracking(image_filename,r)){
+            tracker = t;
+            break;
+         }
+      }      
+      
+      if (tracker == null){
+         tracker = new Tracker(this, image_filename, r);
+         trackers.add(tracker);
+      }
+      
+      tracker.addReferencingComponent(c);
+   }
+
+   public void addTracker(String image_filename, Region r, ArrayList<SikuliGuideComponent> components) {
+      Tracker tracker = new Tracker(this, image_filename, r);
+      for (SikuliGuideComponent c : components){
+         tracker.addReferencingComponent(c);
+      }      
+      trackers.add(tracker);   
+   }
+   
+   
 }
 
 

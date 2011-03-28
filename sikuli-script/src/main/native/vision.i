@@ -4,6 +4,7 @@
 #include "sikuli-debug.h"
 #include <iostream>
 #include "opencv.hpp"
+#include "cvgui.h"
 %}
 
 %include "std_vector.i"
@@ -121,6 +122,22 @@ public:
    
 };
 
+//class Blob : public cv::Rect{
+//   
+//public:
+//
+//   Blob(){};
+//   Blob(const cv::Rect& rect);
+//   
+//   bool isContainedBy(Blob& b);
+//   
+//   double area;
+//   int mb;
+//   int mg;
+//   int mr;
+//   int score;
+//};
+
 %include "enumtypeunsafe.swg"
 %javaconst(1);
 enum TARGET_TYPE{
@@ -181,9 +198,10 @@ namespace sikuli {
       static void initOCR(const char* ocrDataPath);
       
       static std::string query(const char* index_filename, cv::Mat image);
-      
-      
+            
       static OCRText recognize_as_ocrtext(cv::Mat image);
+      
+      static std::vector<FindResult> findBlobs(const cv::Mat& image);
       
       static std::string recognize(cv::Mat image);
       

@@ -13,6 +13,7 @@
 #include "find-result.h"
 #include "opencv.hpp"
 #include "tessocr.h"
+#include "cvgui.h"
 
 using namespace cv;
 
@@ -83,7 +84,7 @@ private:
 class Vision{
 public:
       
-   static vector<FindResult> find(FindInput q);
+   static std::vector<FindResult> find(FindInput q);
 
    static std::vector<FindResult> findChanges(FindInput q);
    
@@ -95,6 +96,8 @@ public:
    static string query(const char* index_filename, cv::Mat image);
    
    static OCRText recognize_as_ocrtext(cv::Mat image);
+   
+   static std::vector<FindResult> findBlobs(const cv::Mat& image);
       
    static std::string recognize(cv::Mat image);
 
