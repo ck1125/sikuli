@@ -5,45 +5,81 @@ package org.sikuli.guide;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
+
+import javax.swing.JComponent;
+
+import org.sikuli.script.Debug;
+import org.sikuli.script.Region;
 
 public class SikuliGuideShadow extends SikuliGuideComponent{
 
 
    int shadowSize = 10;
    SikuliGuideComponent source;
-   public SikuliGuideShadow(SikuliGuideComponent source) {
+   
+   Dimension sourceSize = new Dimension();
+   public SikuliGuideShadow(SikuliGuideComponent source_) {
       super();
-      this.source = source;
+      this.source = source_;
+
+      setBoundsRelativeToComponent(source);
+      setLocationRelativeToComponent(source,-shadowSize+2,-shadowSize+2);      
+   }
+
+   @Override
+   public void setLocationRelativeToComponent(SikuliGuideComponent comp, int offsetx, int offsety) {
+      this.source = comp;
+      setBoundsRelativeToComponent(comp);
+      super.setLocationRelativeToComponent(comp, offsetx, offsety);       
+   }
+   
+   @Override
+   public void setLocationRelativeToRegion(Region region, Layout side) {
+      setBoundsRelativeToComponent(source);
+      Debug.info("[Shadow] UDPATED: " + this);
+
+      super.setLocationRelativeToRegion(region, side);       
+   }
+
+   
+   
+
+   void setBoundsRelativeToComponent(SikuliGuideComponent comp){
+      if (sourceSize.equals(comp.getSize()))
+         return;
       
       
-      if (source instanceof SikuliGuideCircle ||
-            source instanceof SikuliGuideArrow ||
-            source instanceof SikuliGuideRectangle ||
-            source instanceof SikuliGuideBracket){
+      sourceSize = (Dimension) comp.getSize().clone();
+      source = comp;
+      
+      if (comp instanceof SikuliGuideCircle ||
+            comp instanceof SikuliGuideArrow ||
+            comp instanceof SikuliGuideRectangle ||
+            comp instanceof SikuliGuideBracket){
          shadowSize = 5;
       } else if (source instanceof SikuliGuideFlag ||
             source instanceof SikuliGuideText){
          shadowSize = 10;
+      } else{
+         shadowSize = 10;
       }
-      
-      Rectangle r = source.getBounds();
-      r.grow(shadowSize,shadowSize);
 
-      // offset shadow      
-      r.x += shadowSize/4;
-      r.y += shadowSize/4;
+      Rectangle r = comp.getBounds();
+      r.grow(shadowSize,shadowSize);
       
-      setBounds(r);
-      
-      source.setShadow(this);
+      setSize(r.getSize());
+      createShadowImage();
    }
-   
+
    float shadowOpacity = 0.8f;
    Color shadowColor = Color.black;
    BufferedImage createShadowMask(BufferedImage image){ 
@@ -58,32 +94,39 @@ public class SikuliGuideShadow extends SikuliGuideComponent{
       g2d.dispose(); 
       return mask; 
    } 
-//   
-   
+
    ConvolveOp getBlurOp(int size) {
       float[] data = new float[size * size];
       float value = 1 / (float) (size * size);
       for (int i = 0; i < data.length; i++) {
-          data[i] = value;
+         data[i] = value;
       }
       return new ConvolveOp(new Kernel(size, size, data));
-  }
-   
-   public void paint(Graphics g){
-      super.paint(g);
+   }
 
-      Graphics2D g2d = (Graphics2D)g;
-      BufferedImage image = new BufferedImage(getWidth() + shadowSize * 2,
-            getHeight() + shadowSize * 2, BufferedImage.TYPE_INT_ARGB);
+   BufferedImage shadowImage = null;
+   public BufferedImage createShadowImage(){    
+
+      BufferedImage image = new BufferedImage(source.getWidth() + shadowSize * 2,
+            source.getHeight() + shadowSize * 2, BufferedImage.TYPE_INT_ARGB);
       Graphics2D g2 = image.createGraphics();
       g2.translate(shadowSize,shadowSize);
       source.paint(g2);
-      
-      BufferedImage shadow = new BufferedImage(image.getWidth(),image.getHeight(),BufferedImage.TYPE_INT_ARGB);
-      getBlurOp(shadowSize).filter(createShadowMask(image), shadow);
+
+      shadowImage = new BufferedImage(image.getWidth(),image.getHeight(),BufferedImage.TYPE_INT_ARGB);
+      getBlurOp(shadowSize).filter(createShadowMask(image), shadowImage);
 
       
-      g2d.drawImage(shadow, 0, 0, null, null);
-      
+      Debug.info("[Shadow] shadowImage: " + shadowImage);
+      Debug.info("[Shadow] bounds: " + getBounds());
+
+      return shadowImage;
+   }
+
+   public void paintComponent(Graphics g){
+      super.paintComponent(g);
+
+      Graphics2D g2d = (Graphics2D)g;
+      g2d.drawImage(shadowImage, 0, 0, getWidth(), getHeight(), null, null);
    }
 }

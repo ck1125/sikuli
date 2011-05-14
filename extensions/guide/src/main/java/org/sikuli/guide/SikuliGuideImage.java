@@ -12,15 +12,19 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.sikuli.script.ImageLocator;
+
 public class SikuliGuideImage extends SikuliGuideComponent {
    
-   BufferedImage image;
+   private BufferedImage image;
    float scale;
    int w,h;
    
    public SikuliGuideImage(String filename) throws IOException{
        super();
-       File sourceimage = new File(filename);
+       
+       ImageLocator locator = new ImageLocator();       
+       File sourceimage = new File(locator.locate(filename));
        BufferedImage bimage = ImageIO.read(sourceimage);
        init(bimage);
    }
@@ -35,18 +39,28 @@ public class SikuliGuideImage extends SikuliGuideComponent {
       setScale(1.0f);      
    }
    
+   
+   
    public void setScale(float scale){
       this.scale = scale;
       w = (int) (scale*image.getWidth());
       h = (int) (scale*image.getHeight());
-      setSize(new Dimension(w,h));
+      setActualSize(new Dimension(w,h));
    }
       
-   public void paint(Graphics g){
+   public void paintComponent(Graphics g){
       Graphics2D g2d = (Graphics2D) g;
       
-      g2d.drawImage(image, 0, 0, w, h, null); 
-      g2d.drawRect(0,0,w-1,h-1);
+      g2d.drawImage(image, 0, 0, getActualWidth(), getActualHeight(), null); 
+      g2d.drawRect(0,0,getActualWidth()-1,getActualHeight()-1);
+   }
+
+   public void setImage(BufferedImage image) {
+      this.image = image;
+   }
+
+   public BufferedImage getImage() {
+      return image;
    }
    
 }

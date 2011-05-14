@@ -1,3 +1,8 @@
+/*
+ * Copyright 2010-2011, Sikuli.org
+ * Released under the MIT License.
+ *
+ */
 package org.sikuli.script;
 
 import java.io.*;
@@ -10,7 +15,7 @@ import java.lang.reflect.Constructor;
 
 
 public class Env {
-   final static String SikuliVersion = "X-1.0rc2";
+   final static String SikuliVersion = "X-1.0rc3";
 
    public static Location getMouseLocation() throws HeadlessException{
       Point loc = MouseInfo.getPointerInfo().getLocation();
@@ -92,7 +97,7 @@ public class Env {
       return _osUtil;
    }
 
-   static boolean isLockOn(char key){
+   public static boolean isLockOn(char key){
       Toolkit tk = Toolkit.getDefaultToolkit();
       switch(key){
          case '\ue025': return tk.getLockingKeyState(KeyEvent.VK_SCROLL_LOCK);

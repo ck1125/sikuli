@@ -363,13 +363,14 @@ it afterwards. Unsuccessful find operations will leave these values unchanged.
 
 .. _PatternNotFound:
 
-As a default, if the **visual object (image or text) cannot be found**, Sikuli
+By default, if the **visual object (image or text) cannot be found**, Sikuli
 will stop the script by raising an :ref:`Exception FindFailed <ExceptionFindFailed>`. 
 This follows the standards of the Python language, so that you could handle such exceptions using
 ``try: ... except: ...``. 
 
 If you are not used to programming using the Python language or because of other reasons, you might just want to bypass the
-exception handling (ignore it) or interactively react on a FindFailed situation (e.g. optionally repeat the find).
+exception handling, which means just ignoring it (None is returned in that case). 
+Or you might interactively react on a FindFailed situation (e.g. optionally repeat the find).
 Read more about concepts and options at: :ref:`Exception FindFailed <ExceptionFindFailed>`.
 
 If you have **multiple monitors**, please read 
@@ -386,7 +387,7 @@ using a string containing the file name (path to an image file).
 	.. py:method:: find(PS)
 
 		:param PS: a :py:class:`Pattern` object or a string (path to an image file or just plain text)
-		:return: a :py:class:`Match` object that contains the best match or ``None`` if not found. 
+		:return: a :py:class:`Match` object that contains the best match or fails if :ref:`not found <PatternNotFound>`
 
 		Find a particular GUI element, which is seen as the given image or
 		just plain text. The given file name of an image specifies the element's
@@ -396,9 +397,6 @@ using a string containing the file name (path to an image file).
 		:py:meth:`Pattern.similar` before, a default minimum similarity of 0.7
 		is set automatically. 
 		
-		If no match is found with the minimum similarity
-		or greater, the find fails (see: :ref:`not found <PatternNotFound>`)
-
 		If autoWaitTimeout is set to a non-zero value, find() just acts as a wait().
 
 		**Side Effect** *lastMatch*: the best match can be accessed using :py:meth:`Region.getLastMatch` afterwards.
@@ -407,8 +405,9 @@ using a string containing the file name (path to an image file).
 
 		:param PS: a :py:class:`Pattern` object or a string (path to an image
 			file or just plain text)
-		:return: one ore more match objects as an iterator object or ``None`` if not found. How to
-			iterate through is :ref:`documented here <IteratingMatches>`. 
+		:return: one or more match objects as an iterator object or fails if :ref:`not found <PatternNotFound>`
+		
+		How to iterate through is :ref:`documented here <IteratingMatches>`. 
 
 		Repeatedly find ALL instances of a pattern, until no match can be
 		found anymore, that meets the requirements for a single
@@ -428,7 +427,7 @@ using a string containing the file name (path to an image file).
 			specified, the auto wait timeout value set by
 			:py:meth:`Region.setAutoWaitTimeout` is used. Use the constant
 			*FOREVER* to wait for an infinite time. 
-		:return: a :py:class:`Match` object that contains the best match or ``None`` if not found. 
+		:return: a :py:class:`Match` object that contains the best match or fails if :ref:`not found <PatternNotFound>`
 
 		If *PS* is not specified, the script just pauses for the specified
 		amount of time. It is still possible to use ``sleep(seconds)`` instead,

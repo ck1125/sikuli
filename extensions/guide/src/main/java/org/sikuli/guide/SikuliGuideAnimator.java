@@ -1,5 +1,6 @@
 package org.sikuli.guide;
 
+import java.awt.Container;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -107,7 +108,8 @@ class MoveAnimator extends  SikuliGuideAnimator{
    int repeatCount;
    int count;
    
-   OutQuarticEase tfuncx,tfuncy;
+   QuarticEase tfuncx;
+   QuarticEase tfuncy;
    Point src,dest;
    
    public MoveAnimator(SikuliGuideComponent comp, Point src, Point dest){
@@ -116,8 +118,12 @@ class MoveAnimator extends  SikuliGuideAnimator{
       repeatCount = duration / cycle;     
       count = 0;
       
-      tfuncx = new OutQuarticEase(src.x,dest.x,repeatCount);
-      tfuncy = new OutQuarticEase(src.y,dest.y,repeatCount);
+//      tfuncx = new OutQuarticEase(src.x,dest.x,repeatCount);
+//      tfuncy = new OutQuarticEase(src.y,dest.y,repeatCount);
+
+      tfuncx = new QuarticEase(src.x,dest.x,repeatCount);
+      tfuncy = new QuarticEase(src.y,dest.y,repeatCount);
+
       
       this.dest = dest;
       this.src = src;
@@ -135,16 +141,16 @@ class MoveAnimator extends  SikuliGuideAnimator{
          
          Rectangle r1 = comp.getBounds();
          
-         comp.setLocation(x,y); 
+         comp.setActualLocation(x,y); 
          
          Rectangle r2 = comp.getBounds();
          r1.add(r2);
          
-         comp.getParent().getParent().repaint(r1.x,r1.y,r1.width,r1.height);
-
-         
-         //comp.sikuliGuide.repaint();
-        // comp.repaint();
+          Container c = comp.getParent();
+          
+          if (c != null){
+             c.getParent().getParent().repaint(r1.x,r1.y,r1.width,r1.height);
+          }
          
       }else{
          timer.stop();
@@ -153,7 +159,7 @@ class MoveAnimator extends  SikuliGuideAnimator{
    }
    
    public void start(){
-      comp.setLocation(src.x,src.y);
+      comp.setActualLocation(src.x,src.y);
       super.start();
    }
    

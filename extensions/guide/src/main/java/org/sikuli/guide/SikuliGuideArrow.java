@@ -11,47 +11,61 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
-import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.lang.reflect.Array;
 
-public class SikuliGuideArrow extends SikuliGuideComponent{
+import org.sikuli.script.Debug;
+
+public class SikuliGuideArrow extends SikuliGuideComponent implements ComponentListener{
 
    public static final int STRAIGHT = 0;
    public static final int ELBOW_X = 1;
    public static final int ELBOW_Y = 2;
    
    int style;
+   private Point source;
+   private Point destination;
+   
+   
+   SikuliGuideComponent from;
+   SikuliGuideComponent to;
    
    public void setStyle(int style){
       this.style = style;
    }
    
-	public Point getFrom() {
-		return from;
-	}
-
-	public Point getTo() {
-		return to;
-	}
-
-	Point from;
-	Point to;
 	public SikuliGuideArrow(Point from, Point to){
 	   super();
-		this.from = from;
-		this.to = to;
+		this.source = from;
+		this.destination = to;
 		
-		Rectangle r = new Rectangle(from);
-		r.add(to);
-		r.grow(10,10);		
-		setBounds(r);
-		setForeground(Color.red);
-	
+		setForeground(Color.red);	
 		setStyle(STRAIGHT);
+		updateBounds();
 	}
 	
+	  public SikuliGuideArrow(SikuliGuideComponent from, SikuliGuideComponent to){
+	      super();
+	      this.from = from;
+	      this.to = to;
+	      	      
+	      setForeground(Color.red);  
+	      setStyle(STRAIGHT);
+	      updateBounds();
+	      
+	      
+	      
+	      
+	      from.addComponentListener(this);
+	      to.addComponentListener(this);
+	      
+	      updateVisibility();
+
+	   }
 	
+	
+
 
 	private void drawPolylineArrow(Graphics g, int[] xPoints, int[] yPoints, int headLength, int headwidth){
 
@@ -100,15 +114,15 @@ public class SikuliGuideArrow extends SikuliGuideComponent{
 
 	}//end drawPolylineArrow
 
-	public void paint(Graphics g) {
-	   super.paint(g);
+	public void paintComponent(Graphics g) {
+	   super.paintComponent(g);
 	   
 		Graphics2D g2d = (Graphics2D) g;
 
 		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
             RenderingHints.VALUE_ANTIALIAS_ON);       
 
-		Rectangle r = getBounds();
+		Rectangle r = getActualBounds();
 		
 		Stroke pen = new BasicStroke(3.0F);
 		g2d.setStroke(pen);
@@ -116,22 +130,90 @@ public class SikuliGuideArrow extends SikuliGuideComponent{
 
 		if (style == STRAIGHT){
 		
-		   drawPolylineArrow(g, new int[]{from.x,to.x}, new int[]{from.y,to.y}, 6, 6);
+		   drawPolylineArrow(g, new int[]{getSource().x,getDestination().x}, new int[]{getSource().y,getDestination().y}, 6, 6);
 		
 		}else if (style == ELBOW_X){
 		   
-		   Point m = new Point(to.x, from.y);
+		   Point m = new Point(getDestination().x, getSource().y);
 		   
-		   g2d.drawLine(from.x,from.y,m.x,m.y);
-         drawPolylineArrow(g, new int[]{m.x,to.x}, new int[]{m.y,to.y}, 6, 6);		   		   
+		   g2d.drawLine(getSource().x,getSource().y,m.x,m.y);
+         drawPolylineArrow(g, new int[]{m.x,getDestination().x}, new int[]{m.y,getDestination().y}, 6, 6);		   		   
 		   
 		}else if (style == ELBOW_Y){
          
-         Point m = new Point(from.x, to.y);
+         Point m = new Point(getSource().x, getDestination().y);
          
-         g2d.drawLine(from.x,from.y,m.x,m.y);
-         drawPolylineArrow(g, new int[]{m.x,to.x}, new int[]{m.y,to.y}, 6, 6);                  
+         g2d.drawLine(getSource().x,getSource().y,m.x,m.y);
+         drawPolylineArrow(g, new int[]{m.x,getDestination().x}, new int[]{m.y,getDestination().y}, 6, 6);                  
          
       }
 	}
+
+   public void setDestination(Point destination) {
+      this.destination = destination;
+      updateBounds();
+   }
+
+   public Point getDestination() {
+      return destination;
+   }
+
+   public void setSource(Point source) {
+      this.source = source;
+      updateBounds();
+   }
+
+   public Point getSource() {
+      return source;
+   }
+
+   protected void updateBounds() {
+      
+      Rectangle dirtyBounds = getBounds();
+
+//      source = from.getLocation();
+//      destination = to.getLocation();      
+// TODO: fix this hack
+      if (from != null && to != null){
+         source = from.getCenter();
+         destination = to.getCenter();
+      }
+
+      Debug.info("" + getSource() + " to " + getDestination());
+      Rectangle r = new Rectangle(getSource());
+      r.add(getDestination());
+      
+      r.grow(10,10);    
+      setActualBounds(r);
+      
+      dirtyBounds.add(getBounds());
+      if (getTopLevelAncestor() != null)
+         getTopLevelAncestor().repaint(dirtyBounds.x,dirtyBounds.y,dirtyBounds.width,dirtyBounds.height);
+
+   }
+
+   void updateVisibility(){
+      setVisible(from.isVisible() && to.isVisible());      
+   }
+   
+   @Override
+   public void componentHidden(ComponentEvent arg0) {
+      updateVisibility();
+   }
+
+   @Override
+   public void componentMoved(ComponentEvent arg0) {
+      updateBounds();
+   }
+
+   @Override
+   public void componentResized(ComponentEvent arg0) {
+   }
+
+   @Override
+   public void componentShown(ComponentEvent arg0) {
+      updateBounds();
+      updateVisibility();
+   }
+
 }

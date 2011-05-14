@@ -1,15 +1,12 @@
 /*
- *  cvgui.h
- *  sikuli
- *
- *  Created by Tom Yeh on 9/8/10.
- *  Copyright 2010 sikuli.org. All rights reserved.
+ * Copyright 2010-2011, Sikuli.org
+ * Released under the MIT License.
  *
  */
 #ifndef _CVGUI_H_
 #define _CVGUI_H_
 
-#include "opencv2/opencv.hpp"
+#include "opencv.hpp"
 #include <iostream>
 #include "tessocr.h"
 

@@ -1,9 +1,6 @@
 /*
- *  pyramid-template-matcher.h
- *  vision
- *
- *  Created by Tom Yeh on 5/1/10.
- *  Copyright 2010 sikuli.org. All rights reserved.
+ * Copyright 2010-2011, Sikuli.org
+ * Released under the MIT License.
  *
  */
 #ifndef _PYRAMID_TEMPLATE_MATCHER_
@@ -13,7 +10,7 @@
 #include <iostream>
 
 
-#include "opencv2/opencv.hpp"
+#include "opencv.hpp"
 #include "find-result.h"
 
 using namespace cv;

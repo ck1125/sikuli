@@ -1,3 +1,5 @@
+# Copyright 2010-2011, Sikuli.org
+# Released under the MIT License.
 cmake_minimum_required(VERSION 2.6)
 PROJECT (sikuli-script Java)
 
@@ -141,6 +143,7 @@ SET(PYTHON_TESTS
    keys mouse multiscreen observe region 
    showActions sikuli type vdict wait with
    ocr imageurl wheel imagepath findfailed
+   pattern
 )
 
 SET(PY_TEST_DIR "${BASE_DIR}/src/test/python")
